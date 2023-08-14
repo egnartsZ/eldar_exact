@@ -1,5 +1,5 @@
 # Boolean text search using Eldar
-Fork of kerighan/eldar to adapt it to work on multiword queries and fuzzy matching at the cost of a slower search
+Fork of kerighan/eldar to adapt it to work on multiword queries with wildcards and fuzzy matching using lemmatization at the cost of a slower search
 Will be updated in the future to also be able to retrieve indexes of matching substring in the text
 
 

@@ -42,3 +42,21 @@ class OR(Binary):
 
     def __repr__(self):
         return f"({self.left}) OR ({self.right})"
+    
+
+
+class SearchOR:
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+
+
+    def evaluate(self, doc):
+        left = self.left.evaluate(doc)
+        right = self.right.evaluate(doc)
+        left[0] += bool(right[0])
+        left[1] += right[1]
+        return left
+
+    def __repr__(self):
+        return f"({self.left}) OR ({self.right})"

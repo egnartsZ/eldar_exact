@@ -6,9 +6,9 @@ from .regex import WILD_CARD_REGEX
 
 
 class Entry:
-    def __init__(self, query):
+    def __init__(self, query, search = False):
         self.not_ = False
-
+        self.search = search
         if query[:4] == "not ":
             self.not_ = True
             query = query[4:]
@@ -23,17 +23,18 @@ class Entry:
 
     def evaluate(self, doc):
         if self.rgx:
-
+            #print(self.rgx.match(item))
             if isinstance(doc, str):
                 doc = [doc]
-
+            
             for item in doc:
-                if self.rgx.match(item):
+                if self.rgx.search(item):
                     res = True
                     break
             else:
                 res = False
         else:
+            #print(doc, self.query)
             res = self.query in doc
 
         if self.not_:
@@ -45,6 +46,30 @@ class Entry:
         if self.not_:
             return f'NOT "{self.query}"'
         return f'"{self.query}"'
+
+class SearchEntry(Entry):
+    def __init__(self, query, search = False):
+        super(SearchEntry, self).__init__(query, search)
+        self.pattern = self.query.replace("*", WILD_CARD_REGEX)
+        self.rgx = re.compile(self.pattern)
+
+
+
+
+    def evaluate(self, doc):
+        res = [False, []]
+        if isinstance(doc, str):
+            doc = [doc]
+        
+        for i, item in enumerate(doc):
+            
+            matchs = self.rgx.finditer(item)
+            for match in matchs:
+                print(self.rgx, match)
+                print(match.start(0), match, doc)
+                res[0] = True
+                res[1].append(match.start(0))
+        return res
 
 
 class IndexEntry:

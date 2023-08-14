@@ -1,21 +1,14 @@
 # Boolean text search using Eldar
+Fork of kerighan/eldar to adapt it to work on multiword queries and fuzzy matching at the cost of a slower search
+Will be updated in the future to also be able to retrieve indexes of matching substring in the text
+
 
 ## Getting Started
-
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
-
-### Installing
-
-You can install the method by typing:
-```
-pip install eldar
-```
 
 ### Basic usage
 
 ```python
-from eldar import Query
-
+from eldar_extended import Query
 
 # build list
 documents = [
@@ -44,7 +37,7 @@ print(eldar(documents[2]))
 
 You can also use it to mask Pandas DataFrames:
 ```python
-from eldar import Query
+from eldar_extended import Query
 import pandas as pd
 
 
@@ -84,7 +77,7 @@ Let the query be ```query = '"movie"'```:
 Queries also support `*` as wildcard character. Wildcard matches any number (including none) of alphanumeric characters.
 
 ```python
-from eldar import Query
+from eldar_extended import Query
 
 
 # sample document and query with multiple wildcards:

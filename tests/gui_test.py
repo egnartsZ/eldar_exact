@@ -1,5 +1,5 @@
 import pandas as pd
-from eldar import Index
+from eldar_extended import Index
 
 documents = [
     "Gandalf is a fictional character in Tolkien's The Lord of the Rings",

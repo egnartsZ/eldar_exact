@@ -50,3 +50,15 @@ print(searchquery(documents[3]))
 # >>> [<eldar_extended.Match object; span=(24, 29), match = 'frodo'>]
 print(searchquery(documents[4]))
 # >>> []
+
+searchquery = SearchQuery('(("gandalf is a" OR "frodo") OR "gan*lf in") IF ("lord" AND "rings")', ignore_case= True)
+print(searchquery(documents[0]))
+# >>> [<eldar_extended.Match object; span=(0, 12), match = 'gandalf is a'>]
+print(searchquery(documents[1]))
+# >>> [<eldar_extended.Match object; span=(0, 5), match = 'frodo'>]
+print(searchquery(documents[2]))
+# >>> []
+print(searchquery(documents[3]))
+# >>> []
+print(searchquery(documents[4]))
+# >>> []

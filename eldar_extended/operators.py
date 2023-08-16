@@ -58,3 +58,18 @@ class SearchOR:
 
     def __repr__(self):
         return f"({self.left}) OR ({self.right})"
+    
+
+class IF:
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    
+    def evaluate(self, doc):
+        if self.right.evaluate(doc):
+            return self.left.evaluate(doc)
+        else:
+            return []
+
+    def __repr__(self):
+        return f"({self.left}) IF ({self.right})"

@@ -5,8 +5,7 @@ from dataclasses import dataclass
 from .regex import WILD_CARD_REGEX
 from .match import Match
 
-
-class Entry:
+class EntryAbstract:
     def __init__(self, query):
         self.not_ = False
         if query[:4] == "not ":
@@ -21,6 +20,14 @@ class Entry:
         else:
             self.rgx = None
 
+
+    def __repr__(self):
+        if self.not_:
+            return f'NOT "{self.query}"'
+        return f'"{self.query}"'
+
+
+class Entry(EntryAbstract):
     def evaluate(self, doc):
         if self.rgx:
             if self.rgx.search(doc):
@@ -35,15 +42,9 @@ class Entry:
 
         return res
 
-    def __repr__(self):
-        if self.not_:
-            return f'NOT "{self.query}"'
-        return f'"{self.query}"'
+    
 
-class SearchEntry(Entry):
-    def __init__(self, query):
-        super(SearchEntry, self).__init__(query)
-
+class SearchEntry(EntryAbstract):
     def evaluate(self, doc):
         if self.rgx:
             matchs = self.rgx.finditer(doc)

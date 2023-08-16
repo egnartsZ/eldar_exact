@@ -2,12 +2,11 @@ from unidecode import unidecode
 import re
 from .regex import WORD_REGEX
 from .entry import Entry, SearchEntry
-from .operators import AND, ANDNOT, OR, SearchOR
+from .operators import AND, ANDNOT, OR, SearchOR, IF
 import spacy
 
 
-
-class Query:
+class QueryInterface:
     def __init__(
         self,
         query,
@@ -31,7 +30,7 @@ class Query:
                 raise ValueError("Language " + str(language) +" not supported")
         else:
             self.nlp_model = None
-        self.query = Query.parse_query(query, ignore_case, ignore_accent, lemma_match, self.nlp_model)
+        
         
             
     def preprocess(self, doc):
@@ -61,7 +60,21 @@ class Query:
 
     def __repr__(self):
         return self.query.__repr__()
+    
 
+
+class Query(QueryInterface):
+    def __init__(
+        self,
+        query,
+        ignore_case=True,
+        ignore_accent=True,
+        exact_match=True,
+        lemma_match = False,
+        language = 'en'
+    ):
+        super(Query, self).__init__(query, ignore_case, ignore_accent, exact_match, lemma_match, language)
+        self.query = Query.parse_query(query, self.ignore_case, self.ignore_accent, self.lemma_match, self.nlp_model)
 
     def parse_query(query, ignore_case, ignore_accent, lemma_match, nlp_model):
         # remove brackets around query
@@ -85,7 +98,6 @@ class Query:
             match_item = (start, end)
             match.append((operator, match_item))
         match_len = len(match)
-
         if match_len != 0:
             # stop at first balanced operation
             for i, (operator, (start, end)) in enumerate(match):
@@ -125,7 +137,7 @@ class Query:
             return Entry(query)
 
 
-class SearchQuery(Query):
+class SearchQuery(QueryInterface):
     def __init__(
         self,
         query,
@@ -150,19 +162,22 @@ class SearchQuery(Query):
                 query = query.lower()
             if ignore_accent:
                 query = unidecode(query)
-            return Entry(query)
-
+            return SearchEntry(query)
         # find all operators
         match = []
-        match_iter = re.finditer(r" (OR) ", query, re.IGNORECASE)
+        match_iter = re.finditer(r" (OR|IF) ", query, re.IGNORECASE)
+        nb_if = 0
         for m in match_iter:
             start = m.start(0)
             end = m.end(0)
             operator = query[start+1:end-1].lower()
+            if operator == "if":
+                nb_if+= 1
+                if nb_if >= 2:
+                    raise ValueError("Query malformed, contains multiple IF")
             match_item = (start, end)
             match.append((operator, match_item))
         match_len = len(match)
-
         if match_len != 0:
             # stop at first balanced operation
             for i, (operator, (start, end)) in enumerate(match):
@@ -180,6 +195,11 @@ class SearchQuery(Query):
                     SearchQuery.parse_query(left_part, ignore_case, ignore_accent, lemma_match, nlp_model),
                     SearchQuery.parse_query(right_part, ignore_case, ignore_accent, lemma_match, nlp_model)
                 )
+            if operator == "if":
+                return IF(
+                    SearchQuery.parse_query(left_part, ignore_case, ignore_accent, lemma_match, nlp_model),
+                    Query.parse_query(right_part, ignore_case, ignore_accent, lemma_match, nlp_model)
+                )
         else:
             if ignore_case:
                 query = query.lower()
@@ -192,9 +212,6 @@ class SearchQuery(Query):
             return SearchEntry(query)
         
 
-
-    def __call__(self, doc):
-        return self.evaluate(doc)
 
 def strip_brackets(query):
     count_left = 0

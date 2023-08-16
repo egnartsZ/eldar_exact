@@ -131,16 +131,16 @@ class SearchQuery(Query):
         query,
         ignore_case=True,
         ignore_accent=True,
-        match_word=True
+        exact_match=True,
+        lemma_match = False,
+        language = 'en'
     ):
-        self.ignore_case = ignore_case
-        self.ignore_accent = ignore_accent
-        self.match_word = match_word
-        self.query = SearchQuery.parse_query(query, ignore_case, ignore_accent)
+        super(SearchQuery, self).__init__(query, ignore_case, ignore_accent, exact_match, lemma_match, language)
+        self.query = SearchQuery.parse_query(query, self.ignore_case, self.ignore_accent, self.lemma_match, self.nlp_model)
 
 
 
-    def parse_query(query, ignore_case=True, ignore_accent=True):
+    def parse_query(query, ignore_case, ignore_accent, lemma_match, nlp_model):
         # remove brackets around query
         if query[0] == '(' and query[-1] == ')':
             query = strip_brackets(query)
@@ -154,7 +154,7 @@ class SearchQuery(Query):
 
         # find all operators
         match = []
-        match_iter = re.finditer(r" OR ", query, re.IGNORECASE)
+        match_iter = re.finditer(r" (OR) ", query, re.IGNORECASE)
         for m in match_iter:
             start = m.start(0)
             end = m.end(0)
@@ -177,14 +177,18 @@ class SearchQuery(Query):
 
             if operator == "or":
                 return SearchOR(
-                    SearchQuery.parse_query(left_part, ignore_case, ignore_accent),
-                    SearchQuery.parse_query(right_part, ignore_case, ignore_accent)
+                    SearchQuery.parse_query(left_part, ignore_case, ignore_accent, lemma_match, nlp_model),
+                    SearchQuery.parse_query(right_part, ignore_case, ignore_accent, lemma_match, nlp_model)
                 )
         else:
             if ignore_case:
                 query = query.lower()
             if ignore_accent:
                 query = unidecode(query)
+            if lemma_match:
+                processed = nlp_model(query)
+                query = " ".join([token.lemma_ if not '*' in token.text else token.text for token in processed])
+
             return SearchEntry(query)
         
 

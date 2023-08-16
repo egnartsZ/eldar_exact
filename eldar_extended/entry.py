@@ -3,12 +3,12 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 from .regex import WILD_CARD_REGEX
+from .match import Match
 
 
 class Entry:
-    def __init__(self, query, search = False):
+    def __init__(self, query):
         self.not_ = False
-        self.search = search
         if query[:4] == "not ":
             self.not_ = True
             query = query[4:]
@@ -23,18 +23,11 @@ class Entry:
 
     def evaluate(self, doc):
         if self.rgx:
-            #print(self.rgx.match(item))
-            if isinstance(doc, str):
-                doc = [doc]
-            
-            for item in doc:
-                if self.rgx.search(item):
-                    res = True
-                    break
+            if self.rgx.search(doc):
+                res = True
             else:
                 res = False
         else:
-            #print(doc, self.query)
             res = self.query in doc
 
         if self.not_:
@@ -48,27 +41,15 @@ class Entry:
         return f'"{self.query}"'
 
 class SearchEntry(Entry):
-    def __init__(self, query, search = False):
-        super(SearchEntry, self).__init__(query, search)
-        self.pattern = self.query.replace("*", WILD_CARD_REGEX)
-        self.rgx = re.compile(self.pattern)
-
-
-
+    def __init__(self, query):
+        super(SearchEntry, self).__init__(query)
 
     def evaluate(self, doc):
-        res = [False, []]
-        if isinstance(doc, str):
-            doc = [doc]
-        
-        for i, item in enumerate(doc):
-            
-            matchs = self.rgx.finditer(item)
-            for match in matchs:
-                print(self.rgx, match)
-                print(match.start(0), match, doc)
-                res[0] = True
-                res[1].append(match.start(0))
+        if self.rgx:
+            matchs = self.rgx.finditer(doc)
+            res = [Match(match = m) for m in matchs]
+        else:
+            res = find_all(doc, self.query)
         return res
 
 
@@ -141,3 +122,13 @@ def strip_quotes(query):
 class Item:
     id: int
     position: int
+
+
+def find_all(s, sub):
+    start = 0
+    res = []
+    while True:
+        start = s.find(sub, start)
+        if start == -1: return res
+        res.append(Match(start = start, end = start + len(sub), match_substr= sub))
+        start += len(sub) # use start += 1 to find overlapping matches

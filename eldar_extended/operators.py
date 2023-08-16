@@ -54,9 +54,7 @@ class SearchOR:
     def evaluate(self, doc):
         left = self.left.evaluate(doc)
         right = self.right.evaluate(doc)
-        left[0] += bool(right[0])
-        left[1] += right[1]
-        return left
+        return left + right
 
     def __repr__(self):
         return f"({self.left}) OR ({self.right})"

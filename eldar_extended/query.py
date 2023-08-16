@@ -2,7 +2,7 @@ from unidecode import unidecode
 import re
 from .regex import WORD_REGEX
 from .entry import Entry, SearchEntry
-from .operators import AND, ANDNOT, OR, SearchOR, IF
+from .operators import AND, ANDNOT, OR, SearchOR, IF, NOT
 import spacy
 
 
@@ -90,7 +90,7 @@ class Query(QueryInterface):
 
         # find all operators
         match = []
-        match_iter = re.finditer(r" (AND NOT|AND|OR) ", query, re.IGNORECASE)
+        match_iter = re.finditer(r" (AND NOT|AND|OR|NOT) ", query, re.IGNORECASE)
         for m in match_iter:
             start = m.start(0)
             end = m.end(0)
@@ -123,6 +123,10 @@ class Query(QueryInterface):
             elif operator == "and not":
                 return ANDNOT(
                     Query.parse_query(left_part, ignore_case, ignore_accent, lemma_match, nlp_model),
+                    Query.parse_query(right_part, ignore_case, ignore_accent, lemma_match, nlp_model)
+                )
+            elif operator == "not":
+                return NOT(
                     Query.parse_query(right_part, ignore_case, ignore_accent, lemma_match, nlp_model)
                 )
         else:

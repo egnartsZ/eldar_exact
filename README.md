@@ -109,8 +109,9 @@ print(eldar(document))
 
 Queries support different operators to build complex requests :
 * `OR` 
-* `AND` and `AND NOT` for Query objects
-* `IF` for SearchQuery objects to only return indices which match the IF condition
+* `AND`, `AND NOT` and `NOT` for Query objects
+* `IF` for SearchQuery objects to only return indices which match the Query defined after IF
+
 
 
 ## Building an index for faster queries

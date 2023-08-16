@@ -1,6 +1,6 @@
 # Boolean text search using Eldar
-Fork of kerighan/eldar to adapt it to work on multiword queries with wildcards and fuzzy matching using lemmatization at the cost of a slower search
-Will be updated in the future to also be able to retrieve indexes of matching substring in the text
+Fork of kerighan/eldar to adapt it to work on multiword queries with wildcards and fuzzy matching using lemmatization 
+Also allows to retrieve indexes of matching substring in the text
 
 
 ## Getting Started
@@ -8,7 +8,7 @@ Will be updated in the future to also be able to retrieve indexes of matching su
 ### Basic usage
 
 ```python
-from eldar_extended import Query
+from eldar_extended import Query, SearchQuery
 
 # build list
 documents = [
@@ -32,6 +32,14 @@ print(eldar(documents[0]))
 # by default, words must match. Thus, "movie" != "movies":
 print(eldar(documents[2]))
 # >>> True
+
+searchquery = SearchQuery('("gandalf is a" OR "frodo") OR ("gan*lf in")', ignore_case= True)
+print(searchquery(documents[0]))
+# >>> [<eldar_extended.Match object; span=(0, 12), match = 'gandalf is a'>]
+print(searchquery(documents[1]))
+# >>> [<eldar_extended.Match object; span=(0, 5), match = 'frodo'>]
+print(searchquery(documents[4]))
+# >>> []
 ```
 
 
@@ -61,7 +69,7 @@ print(df)
 
 ### Parameters
 
-There are three parameters that you can adjust in the query builder.
+There are four parameters that you can adjust in the query builder.
 By default:
 ```python
 Query(..., ignore_case=True, ignore_accent=True, match_word=True)
@@ -70,11 +78,18 @@ Let the query be ```query = '"movie"'```:
 
 * If `ignore_case` is True, the documents "Movie" and "movie" will be matched. If False, only "movie" will be matched.
 * If `ignore_accent` is True, the documents "mövie" will be matched.
-* If `match_word` is True, the document will be tokenized and the query terms will have to match exactly. If set to False, the documents "movies" and "movie" will be matched. Setting this option to True may slow down the query.
+* If `exact_match` is True, the document will be tokenized and the query terms will have to match exactly. If set to False, the documents "movies" and "movie" will be matched. Setting this option to True may slow down the query.
+* If `lemma_match` is True, the document and query will be lemmatized and punctuation will be ignored. If set to True, the documents "be a wizard" and "is a wizard" will be matched
+
+
+There are two types of queries:
+* SearchQuery will return a list of match objects containing indices of all matched elements of the document
+* Query will return a boolean if document contain the query
+
 
 ### Wildcards
 
-Queries also support `*` as wildcard character. Wildcard matches any number (including none) of alphanumeric characters.
+All queries also support `*` as wildcard character. Wildcard matches any number (including none) of alphanumeric characters.
 
 ```python
 from eldar_extended import Query
@@ -88,6 +103,15 @@ eldar = Query('"g*dal*"')
 print(eldar(document))
 # >>> True
 ```
+
+
+### Operators
+
+Queries support different operators to build complex requests :
+* `OR` 
+* `AND` and `AND NOT` for Query objects
+* `IF` for SearchQuery objects to only return indices which match the IF condition
+
 
 ## Building an index for faster queries
 
@@ -120,6 +144,9 @@ print(index.search('"frodo b*" AND NOT hobbit', return_ids=True))
 ```
 
 It works like a usual search engine does: by keeping a dictionary that maps each word to its document ids. The boolean query is turned into an operation tree, where document ids are joined or intersected in order to return the desired matches.
+
+
+
 
 ## License
 

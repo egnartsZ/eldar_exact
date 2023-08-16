@@ -8,6 +8,7 @@ class Match:
             self.start = match.start(0)
             self.end = match.end(0)
             self.match = match.group(0)
+        self.span = (self.start, self.end)
     
     def __repr__(self):
         return("<eldar_extended.Match object; span=(" + str(self.start) + ", " + str(self.end) + "), match = '" + str(self.match) + "'>")

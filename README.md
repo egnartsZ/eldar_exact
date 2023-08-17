@@ -72,14 +72,17 @@ print(df)
 There are four parameters that you can adjust in the query builder.
 By default:
 ```python
-Query(..., ignore_case=True, ignore_accent=True, match_word=True)
+Query(..., ignore_case=True, ignore_accent=True, exact_match=True, lemma_match = False, stop_words = False, stop_words_list = [], language = "en")
 ```
 Let the query be ```query = '"movie"'```:
 
-* If `ignore_case` is True, the documents "Movie" and "movie" will be matched. If False, only "movie" will be matched.
+* If `ignore_case` is True, the documents "Movie" and "movie" will be matched. If False, only "movie" will be matched. 
 * If `ignore_accent` is True, the documents "mövie" will be matched.
 * If `exact_match` is True, the document will be tokenized and the query terms will have to match exactly. If set to False, the documents "movies" and "movie" will be matched. Setting this option to True may slow down the query.
-* If `lemma_match` is True, the document and query will be lemmatized and punctuation will be ignored. If set to True, the documents "be a wizard" and "is a wizard" will be matched
+* If `lemma_match` is True, the document and queries will be lemmatized and punctuation will be ignored. If set to True, the documents "be a wizard" and "is a wizard" will be matched. 
+* If `stop_words` is True, the document and queries will be stripped of stopwords.
+* `language` is used to chose the most appropriate lemmatizer and standard stop words. Currently allows `"fr"` or `"en"`.
+* `stop_words_list` allows to custom the stop words used by the algorithm.
 
 
 There are two types of queries:

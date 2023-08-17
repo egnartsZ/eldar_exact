@@ -7,23 +7,14 @@ from .match import Match
 
 class EntryAbstract:
     def __init__(self, query):
-        self.not_ = False
-        if query[:4] == "not ":
-            self.not_ = True
-            query = query[4:]
-
-        self.query = query#strip_quotes(query)
-
+        self.query = query
         if "*" in self.query:
             self.pattern = self.query.replace("*", WILD_CARD_REGEX)
             self.rgx = re.compile(self.pattern)
         else:
             self.rgx = None
 
-
     def __repr__(self):
-        if self.not_:
-            return f'NOT "{self.query}"'
         return f'"{self.query}"'
 
 
@@ -36,10 +27,6 @@ class Entry(EntryAbstract):
                 res = False
         else:
             res = self.query in doc
-
-        if self.not_:
-            return not res
-
         return res
 
     
@@ -62,7 +49,7 @@ class IndexEntry:
             raise ValueError(
                 "Single character wildcards * are not implemented")
 
-        #query_term = strip_quotes(query_term)
+        query_term = strip_quotes(query_term)
         if " " in query_term:  # multiword query
             self.query_term = query_term.split()
             self.search = self.search_multiword
@@ -115,6 +102,10 @@ class IndexEntry:
 
 
 
+def strip_quotes(query):
+    if query[0] == '"' and query[-1] == '"' and query.count('"') == 2:
+        return query[1:-1]
+    return query
 
 @dataclass(unsafe_hash=True, order=True)
 class Item:

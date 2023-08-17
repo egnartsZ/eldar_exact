@@ -1,5 +1,4 @@
 from eldar_extended import Query, SearchQuery
-from pprint import pprint
 
 
 # create list of documents to match:
@@ -19,7 +18,7 @@ print(query)
 
 # call to see if the text matches the query:
 print(query(documents[0]))
-# >>> True
+# >>> False
 print(query(documents[1]))
 # >>> True
 print(query(documents[2]))

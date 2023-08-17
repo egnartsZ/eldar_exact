@@ -25,6 +25,7 @@ class QueryAbstract:
         self.lemma_match = lemma_match
         self.language = language
 
+        #load stopwords variables
         if stop_words:
             if len(stop_words_list) == 0:
                 self.stop_words = True
@@ -40,6 +41,7 @@ class QueryAbstract:
             self.stop_words = False
             self.stop_words_list = []
                 
+        #load lemmatizer
         if lemma_match:
             if self.language == "fr":
                 self.nlp_model =  spacy.load('fr_core_news_sm')
@@ -85,13 +87,14 @@ class QueryAbstract:
         return self.query.__repr__()
     
     def parse_query(self, query):
-        # remove brackets around query
+        # remove brackets and quotes around query if necessary
         if query[0] == '(' and query[-1] == ')':
             query = strip_brackets(query)
         query = strip_quotes(query)
+
         # find all operators
         match = []
-        match_iter = re.finditer(r" (OR|IF|AND|AND NOT|NOT) ", query, re.IGNORECASE)
+        match_iter = re.finditer(r" (OR|IF|AND NOT|AND|NOT) ", query, re.IGNORECASE)
         nb_if = 0
         for m in match_iter:
             start = m.start(0)
@@ -103,17 +106,17 @@ class QueryAbstract:
                     raise ValueError("Query malformed, contains multiple IF")
             match_item = (start, end)
             match.append((operator, match_item))
-        match_len = len(match)
-        if match_len != 0:
-            # stop at first balanced operation
-            for i, (operator, (start, end)) in enumerate(match):
+
+        #If there's an operator 
+        if len(match) != 0:
+            # stop at first balanced operation if no balanced operation raise an error
+            for operator, (start, end) in match:
                 left_part = query[:start]
                 if not is_balanced(left_part):
                     continue
-
                 right_part = query[end:]
                 if not is_balanced(right_part):
-                    raise ValueError("Query malformed")
+                    raise ValueError("Query malformed, uninterpretable parenthesis" + str(right_part))
                 break
             else:
                 raise ValueError("Query malformed "+ str(query))
@@ -164,7 +167,7 @@ class Query(QueryAbstract):
                     self.parse_query(right_part)
                 )
             else: 
-                raise ValueError("Query malformed, unsupported operator " +str(operator))
+                raise ValueError("Query malformed, unsupported operator for this type of queries " +str(operator))
 
 
 class SearchQuery(QueryAbstract):
@@ -182,7 +185,6 @@ class SearchQuery(QueryAbstract):
         super(SearchQuery, self).__init__(ignore_case = ignore_case, ignore_accent= ignore_accent, exact_match= exact_match, lemma_match= lemma_match, language=language, stop_words_list = stop_words_list, stop_words= stop_words)
         self.query = self.parse_query(query)
 
-
     def operator_handling(self, operator, left_part, right_part):
         if operator == "or":
             return SearchOR(
@@ -197,8 +199,6 @@ class SearchQuery(QueryAbstract):
             )
         else:
             raise ValueError("Query malformed, unsupported operator " +str(operator))
-
-        
 
 
 def strip_brackets(query):

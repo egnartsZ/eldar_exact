@@ -4,26 +4,45 @@ from .regex import WORD_REGEX
 from .entry import Entry, SearchEntry
 from .operators import AND, ANDNOT, OR, SearchOR, IF, NOT
 import spacy
+import spacy.lang.en
+import spacy.lang.fr
 
 
-class QueryInterface:
+class QueryAbstract:
     def __init__(
         self,
-        query,
         ignore_case=True,
         ignore_accent=True,
         exact_match=True,
         lemma_match = False,
-        language = 'en'
+        language = 'en',
+        stop_words = False,
+        stop_words_list = []
     ):
         self.ignore_case = ignore_case
         self.ignore_accent = ignore_accent
-        self.match_word = exact_match
+        self.exact_match = exact_match
         self.lemma_match = lemma_match
         self.language = language
+
+        if stop_words:
+            if len(stop_words_list) == 0:
+                self.stop_words = True
+                if language == "fr":
+                    self.stop_words_list = spacy.lang.fr.stop_words.STOP_WORDS
+                elif language == "en":
+                    self.stop_words_list = spacy.lang.en.stop_words.STOP_WORDS
+                else:
+                    raise ValueError("Language " + str(language) +" not supported")
+            else:
+                self.stop_words_list = stop_words_list
+        else:
+            self.stop_words = False
+            self.stop_words_list = []
+                
         if lemma_match:
             if self.language == "fr":
-                self.nlp_model =  spacy.load('fr_core_news_md')
+                self.nlp_model =  spacy.load('fr_core_news_sm')
             elif self.language == "en":
                 self.nlp_model =  spacy.load('en_core_web_sm')
             else:
@@ -38,6 +57,10 @@ class QueryInterface:
             doc = doc.lower()
         if self.ignore_accent:
             doc = unidecode(doc)
+        if self.stop_words:
+            processed = self.nlp_model(doc)
+            filtered = [token.text for token in processed if not token.text in self.stop_words_list]
+            doc = " ".join(filtered)
         if self.lemma_match:
             processed = self.nlp_model(doc)
             doc = " ".join([token.lemma_ for token in processed])
@@ -61,115 +84,14 @@ class QueryInterface:
     def __repr__(self):
         return self.query.__repr__()
     
-
-
-class Query(QueryInterface):
-    def __init__(
-        self,
-        query,
-        ignore_case=True,
-        ignore_accent=True,
-        exact_match=True,
-        lemma_match = False,
-        language = 'en'
-    ):
-        super(Query, self).__init__(query, ignore_case, ignore_accent, exact_match, lemma_match, language)
-        self.query = Query.parse_query(query, self.ignore_case, self.ignore_accent, self.lemma_match, self.nlp_model)
-
-    def parse_query(query, ignore_case, ignore_accent, lemma_match, nlp_model):
+    def parse_query(self, query):
         # remove brackets around query
         if query[0] == '(' and query[-1] == ')':
             query = strip_brackets(query)
-        # if there are quotes around query, make an entry
-        if query[0] == '"' and query[-1] == '"' and query.count('"') == 1:
-            if ignore_case:
-                query = query.lower()
-            if ignore_accent:
-                query = unidecode(query)
-            return Entry(query)
-
+        query = strip_quotes(query)
         # find all operators
         match = []
-        match_iter = re.finditer(r" (AND NOT|AND|OR|NOT) ", query, re.IGNORECASE)
-        for m in match_iter:
-            start = m.start(0)
-            end = m.end(0)
-            operator = query[start+1:end-1].lower()
-            match_item = (start, end)
-            match.append((operator, match_item))
-        match_len = len(match)
-        if match_len != 0:
-            # stop at first balanced operation
-            for i, (operator, (start, end)) in enumerate(match):
-                left_part = query[:start]
-                if not is_balanced(left_part):
-                    continue
-
-                right_part = query[end:]
-                if not is_balanced(right_part):
-                    raise ValueError("Query malformed")
-                break
-
-            if operator == "or":
-                return OR(
-                    Query.parse_query(left_part, ignore_case, ignore_accent, lemma_match, nlp_model),
-                    Query.parse_query(right_part, ignore_case, ignore_accent, lemma_match, nlp_model)
-                )
-            elif operator == "and":
-                return AND(
-                    Query.parse_query(left_part, ignore_case, ignore_accent, lemma_match, nlp_model),
-                    Query.parse_query(right_part, ignore_case, ignore_accent, lemma_match, nlp_model)
-                )
-            elif operator == "and not":
-                return ANDNOT(
-                    Query.parse_query(left_part, ignore_case, ignore_accent, lemma_match, nlp_model),
-                    Query.parse_query(right_part, ignore_case, ignore_accent, lemma_match, nlp_model)
-                )
-            elif operator == "not":
-                return NOT(
-                    Query.parse_query(right_part, ignore_case, ignore_accent, lemma_match, nlp_model)
-                )
-        else:
-            if ignore_case:
-                query = query.lower()
-            if ignore_accent:
-                query = unidecode(query)
-            if lemma_match:
-                processed = nlp_model(query)
-                query = " ".join([token.lemma_ if not '*' in token.text else token.text for token in processed])
-
-            return Entry(query)
-
-
-class SearchQuery(QueryInterface):
-    def __init__(
-        self,
-        query,
-        ignore_case=True,
-        ignore_accent=True,
-        exact_match=True,
-        lemma_match = False,
-        language = 'en'
-    ):
-        super(SearchQuery, self).__init__(query, ignore_case, ignore_accent, exact_match, lemma_match, language)
-        self.query = SearchQuery.parse_query(query, self.ignore_case, self.ignore_accent, self.lemma_match, self.nlp_model)
-
-
-
-    def parse_query(query, ignore_case, ignore_accent, lemma_match, nlp_model):
-        # remove brackets around query
-        if query[0] == '(' and query[-1] == ')':
-            query = strip_brackets(query)
-        # if there are quotes around query, make an entry
-        if query[0] == '"' and query[-1] == '"' and query.count('"') == 1:
-            if ignore_case:
-                query = query.lower()
-            if ignore_accent:
-                query = unidecode(query)
-            return SearchEntry(query)
-        # find all operators
-        match = []
-        match_iter = re.finditer(r" (OR|IF) ", query, re.IGNORECASE)
+        match_iter = re.finditer(r" (OR|IF|AND|AND NOT|NOT) ", query, re.IGNORECASE)
         nb_if = 0
         for m in match_iter:
             start = m.start(0)
@@ -193,27 +115,89 @@ class SearchQuery(QueryInterface):
                 if not is_balanced(right_part):
                     raise ValueError("Query malformed")
                 break
-
-            if operator == "or":
-                return SearchOR(
-                    SearchQuery.parse_query(left_part, ignore_case, ignore_accent, lemma_match, nlp_model),
-                    SearchQuery.parse_query(right_part, ignore_case, ignore_accent, lemma_match, nlp_model)
-                )
-            if operator == "if":
-                return IF(
-                    SearchQuery.parse_query(left_part, ignore_case, ignore_accent, lemma_match, nlp_model),
-                    Query.parse_query(right_part, ignore_case, ignore_accent, lemma_match, nlp_model)
-                )
+            else:
+                raise ValueError("Query malformed "+ str(query))
+            
+            return self.operator_handling(operator, left_part, right_part)
         else:
-            if ignore_case:
-                query = query.lower()
-            if ignore_accent:
-                query = unidecode(query)
-            if lemma_match:
-                processed = nlp_model(query)
-                query = " ".join([token.lemma_ if not '*' in token.text else token.text for token in processed])
+            query = self.preprocess(query)
+            if isinstance(self, SearchQuery):
+                return SearchEntry(query)
+            if isinstance(self, Query):
+                return Entry(query)
 
-            return SearchEntry(query)
+
+class Query(QueryAbstract):
+    def __init__(
+        self,
+        query,
+        ignore_case=True,
+        ignore_accent=True,
+        exact_match=True,
+        lemma_match = False,
+        language = 'en', 
+        stop_words = False,
+        stop_words_list = []
+    ):
+        super(Query, self).__init__(ignore_case = ignore_case, ignore_accent= ignore_accent, exact_match= exact_match, lemma_match= lemma_match, language=language, stop_words_list = stop_words_list, stop_words= stop_words)
+        self.query = self.parse_query(query)
+
+
+    def operator_handling(self, operator, left_part, right_part):
+            if operator == "or":
+                return OR(
+                    self.parse_query(left_part),
+                    self.parse_query(right_part)
+                )
+            elif operator == "and":
+                return AND(
+                    self.parse_query(left_part),
+                    self.parse_query(right_part)
+                )
+            elif operator == "and not":
+                return ANDNOT(
+                    self.parse_query(left_part),
+                    self.parse_query(right_part)
+                )
+            elif operator == "not":
+                return NOT(
+                    self.parse_query(right_part)
+                )
+            else: 
+                raise ValueError("Query malformed, unsupported operator " +str(operator))
+
+
+class SearchQuery(QueryAbstract):
+    def __init__(
+        self,
+        query,
+        ignore_case=True,
+        ignore_accent=True,
+        exact_match=True,
+        lemma_match = False,
+        language = 'en', 
+        stop_words = False,
+        stop_words_list = []
+    ):
+        super(SearchQuery, self).__init__(ignore_case = ignore_case, ignore_accent= ignore_accent, exact_match= exact_match, lemma_match= lemma_match, language=language, stop_words_list = stop_words_list, stop_words= stop_words)
+        self.query = self.parse_query(query)
+
+
+    def operator_handling(self, operator, left_part, right_part):
+        if operator == "or":
+            return SearchOR(
+                self.parse_query(left_part),
+                self.parse_query(right_part)
+            )
+        if operator == "if":
+            ifquery = Query(right_part, ignore_case = self.ignore_case, ignore_accent= self.ignore_accent, exact_match= self.exact_match, lemma_match= self.lemma_match, language=self.language, stop_words_list = self.stop_words_list, stop_words= self.stop_words)
+            return IF(
+                self.parse_query(left_part),
+                ifquery.parse_query(right_part)
+            )
+        else:
+            raise ValueError("Query malformed, unsupported operator " +str(operator))
+
         
 
 
@@ -232,11 +216,15 @@ def strip_brackets(query):
         return query[1:-1]
     return query
 
+def strip_quotes(query):
+    if query[0] == '"' and query[-1] == '"' and query.count('"') == 2:
+        return query[1:-1]
+    return query
+
+
 
 def is_balanced(query):
     # are brackets balanced
     brackets_b = query.count("(") == query.count(")")
     quotes_b = query.count('"') % 2 == 0
     return brackets_b and quotes_b
-
-

@@ -12,7 +12,7 @@ class EntryAbstract:
             self.not_ = True
             query = query[4:]
 
-        self.query = strip_quotes(query)
+        self.query = query#strip_quotes(query)
 
         if "*" in self.query:
             self.pattern = self.query.replace("*", WILD_CARD_REGEX)
@@ -62,7 +62,7 @@ class IndexEntry:
             raise ValueError(
                 "Single character wildcards * are not implemented")
 
-        query_term = strip_quotes(query_term)
+        #query_term = strip_quotes(query_term)
         if " " in query_term:  # multiword query
             self.query_term = query_term.split()
             self.search = self.search_multiword
@@ -113,10 +113,7 @@ class IndexEntry:
         return f'"{self.query_term}"'
 
 
-def strip_quotes(query):
-    if query[0] == '"' and query[-1] == '"':
-        return query[1:-1]
-    return query
+
 
 
 @dataclass(unsafe_hash=True, order=True)

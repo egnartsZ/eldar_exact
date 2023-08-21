@@ -4,8 +4,6 @@ from .regex import WORD_REGEX
 from .entry import Entry, SearchEntry
 from .operators import AND, ANDNOT, OR, SearchOR, IF, NOT
 import spacy
-import spacy.lang.en
-import spacy.lang.fr
 
 
 class QueryAbstract:
@@ -30,8 +28,10 @@ class QueryAbstract:
             if len(stop_words_list) == 0:
                 self.stop_words = True
                 if language == "fr":
+                    import spacy.lang.fr
                     self.stop_words_list = spacy.lang.fr.stop_words.STOP_WORDS
                 elif language == "en":
+                    import spacy.lang.en
                     self.stop_words_list = spacy.lang.en.stop_words.STOP_WORDS
                 else:
                     raise ValueError("Language " + str(language) +" not supported")
@@ -54,19 +54,7 @@ class QueryAbstract:
         
         
             
-    def preprocess(self, doc):
-        if self.ignore_case:
-            doc = doc.lower()
-        if self.ignore_accent:
-            doc = unidecode(doc)
-        if self.stop_words:
-            processed = self.nlp_model(doc)
-            filtered = [token.text for token in processed if not token.text in self.stop_words_list]
-            doc = " ".join(filtered)
-        if self.lemma_match:
-            processed = self.nlp_model(doc)
-            doc = " ".join([token.lemma_ for token in processed])
-        return doc
+    
 
     def evaluate(self, doc):
         doc = self.preprocess(doc)
@@ -168,7 +156,22 @@ class Query(QueryAbstract):
                 )
             else: 
                 raise ValueError("Query malformed, unsupported operator for this type of queries " +str(operator))
+            
 
+    def preprocess(self, doc):
+        if self.ignore_case:
+            doc = doc.lower()
+        if self.ignore_accent:
+            doc = unidecode(doc)
+        if self.stop_words:
+            processed = self.nlp_model(doc)
+            filtered = [token.text for token in processed if not token.text in self.stop_words_list]
+            doc = " ".join(filtered)
+        if self.lemma_match:
+            processed = self.nlp_model(doc)
+            doc = " ".join([token.lemma_ for token in processed])
+        return doc
+    
 
 class SearchQuery(QueryAbstract):
     def __init__(
@@ -199,7 +202,22 @@ class SearchQuery(QueryAbstract):
             )
         else:
             raise ValueError("Query malformed, unsupported operator " +str(operator))
-
+        
+    def preprocess(self, doc):
+        if self.ignore_case:
+            doc = doc.lower()
+        if self.ignore_accent:
+            doc = unidecode(doc)
+        if self.stop_words and self.lemma_match:
+            processed = self.nlp_model(doc)
+            doc = [(token.lemma_, (token.idx, token.idx + len(token.text))) for token in processed if not token.text in self.stop_words_list]
+        elif self.stop_words:
+            processed = self.nlp_model(doc)
+            doc = [(token.text, (token.idx, token.idx + len(token.text))) for token in processed if not token.text in self.stop_words_list]
+        elif self.lemma_match:
+            processed = self.nlp_model(doc)
+            doc = [(token.lemma_, (token.idx, token.idx + len(token.text))) for token in processed]
+        return doc
 
 def strip_brackets(query):
     count_left = 0

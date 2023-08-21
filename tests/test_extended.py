@@ -33,10 +33,13 @@ print(query(documents[4]))
 document = "Gandalf is a fictional characters in Tolkien's The Lord of the Rings"
 q1 = Query('"are fictionals characters"', exact_match = False, lemma_match= True, stop_words = True)
 q2 = Query('("lord ring")', exact_match = False, lemma_match= True, stop_words = True)
+q3 = Query("gan*lf * tolkien",exact_match = False, lemma_match= True, stop_words = True )
 # call to see if the text matches the query:
 print(q1(document))
 # >>> True
 print(q2(document))
+# >>> True
+print(q3(document))
 # >>> True
 
 searchquery = SearchQuery('("gandalf is a" OR "frodo") OR ("gan*lf in")', ignore_case= True)
@@ -62,3 +65,16 @@ print(searchquery(documents[3]))
 # >>> []
 print(searchquery(documents[4]))
 # >>> []
+
+
+document = "Gandalf is a fictional characters in Tolkien's The Lord of the Rings"
+q1 = SearchQuery('"are fictionals characters"', exact_match = False, lemma_match= True, stop_words = True)
+q2 = SearchQuery('("lord ring")', exact_match = False, lemma_match= True, stop_words = True)
+q3 = SearchQuery('"gan*lf fictional" OR "lord rings"',exact_match = False, lemma_match= True, stop_words = True )
+# call to see if the text matches the query:
+print(q1(document))
+# >>> [<eldar_extended.Match object; span=(13, 33), match = 'fictional character'>]
+print(q2(document))
+# >>> [<eldar_extended.Match object; span=(51, 68), match = 'lord ring'>]
+print(q3(document))
+# >>> [<eldar_extended.Match object; span=(0, 22), match = 'gandalf fictional'>, <eldar_extended.Match object; span=(51, 68), match = 'lord ring'>]

@@ -7,6 +7,17 @@ from .match import Match
 
 class EntryAbstract:
     def __init__(self, query):
+        
+        if isinstance(query, list):
+            self.query = [q[0] for q in query]
+            self.rgx = []
+            for word in self.query:
+                if "*" in word:
+                    self.pattern = word.replace("*", WILD_CARD_REGEX)
+                    self.rgx.append(re.compile(self.pattern))
+                else:  
+                    self.rgx.append(None)
+            return
         self.query = query
         if "*" in self.query:
             self.pattern = self.query.replace("*", WILD_CARD_REGEX)
@@ -20,6 +31,33 @@ class EntryAbstract:
 
 class Entry(EntryAbstract):
     def evaluate(self, doc):
+        #Multiword query
+        if isinstance(self.query, list):
+            #find all occurences of first word of the query
+            if self.rgx[0]:
+                occurence_first_word = []
+                for i, word in enumerate(doc):
+                    present, index = check_regex_multiword(doc, self.rgx[0], i)
+                    if present:
+                        occurence_first_word.append(i)
+            else:
+                occurence_first_word = find_all_list(doc, self.query[0])
+            
+            #loop through the first occurences found of each word to identify if there's a subsring matching the query that starts there
+            for i, word in enumerate(occurence_first_word):
+                for j, q in enumerate(self.query):
+                    if self.rgx[j]:
+                        check_regex_multiword(doc, self.rgx[j], i)
+                    elif q == doc[i + j]:
+                        continue
+                    else:
+                        break
+                else:
+                    return True
+            else:
+                return False
+                    
+
         if self.rgx:
             if self.rgx.search(doc):
                 res = True
@@ -33,6 +71,48 @@ class Entry(EntryAbstract):
 
 class SearchEntry(EntryAbstract):
     def evaluate(self, doc):
+        if isinstance(self.query, list):
+            res = []
+            #find all occurences of first word of the query
+            if self.rgx[0]:
+                
+                occurence_first_word = []
+                for  i, (word, (start, end)) in enumerate(doc):
+                    end = False
+                    if len(self.rgx) == 1:
+                        end = True
+                    present, index = check_regex_multiword(doc, self.rgx[0], i, end)
+                    if present:
+                        occurence_first_word.append(i)
+            else:
+                occurence_first_word = find_all_list(doc, self.query[0])
+
+            #loop through the first occurences found of each word to identify if there's a subsring matching the query that starts there
+            for i, token_id in enumerate(occurence_first_word):
+                token = doc[token_id]
+                current_token_id = token_id
+                for j, q in enumerate(self.query):
+                    if self.rgx[j]:
+                        end = False
+                        if j == len(self.rgx) - 1:
+                            end = True
+                        check = check_regex_multiword(doc, self.rgx[j], current_token_id, end)
+                        if check[0]:
+                            current_token_id = check[1] +1
+
+                        else:
+                            break
+                    elif q == doc[current_token_id][0]:
+                        current_token_id += 1
+                    else:
+                       break
+                else:
+                    res.append(Match(start =token[1][0], end = doc[current_token_id - 1][1][1], match_substr = " ".join([token[0] for token in doc[token_id : current_token_id]])))
+            else:
+                return res
+
+
+
         if self.rgx:
             matchs = self.rgx.finditer(doc)
             res = [Match(match = m) for m in matchs]
@@ -102,6 +182,28 @@ class IndexEntry:
 
 
 
+def check_regex_multiword(doc, rgx, start_id, end):
+    initial_offset = doc[start_id][1][0]
+    joined_doc = " ".join([token[0] for token in doc[start_id:]])
+    res = rgx.match(joined_doc)
+    if not res:
+        return False, None
+    elif res.start(0) != doc[start_id][1][0]:
+        return False, None
+    elif res.end(0) < doc[start_id][1][1] and not end:
+        return False, None
+    for current_id in range(start_id,len(doc)):
+        if doc[current_id][1][1] < res.end(0) + initial_offset:
+            continue
+        elif doc[current_id][1][1] == res.end(0) + initial_offset:
+            return True, current_id
+        elif  doc[current_id][1][1]> res.end(0) + initial_offset and end:
+            return True, current_id
+        elif doc[current_id][1][1]> res.end(0) + initial_offset:
+            return False, None
+
+
+
 def strip_quotes(query):
     if query[0] == '"' and query[-1] == '"' and query.count('"') == 2:
         return query[1:-1]
@@ -112,6 +214,12 @@ class Item:
     id: int
     position: int
 
+def find_all_list(L, q):
+    all_occurences= []
+    for i, token in enumerate(L):
+        if q == token[0]:
+            all_occurences.append(i)
+    return all_occurences
 
 def find_all(s, sub):
     start = 0

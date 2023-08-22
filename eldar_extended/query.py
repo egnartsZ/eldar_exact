@@ -82,7 +82,7 @@ class QueryAbstract:
 
         # find all operators
         match = []
-        match_iter = re.finditer(r" (OR|IF|AND NOT|AND|NOT) ", query, re.IGNORECASE)
+        match_iter = re.finditer(r" (OR|IF|AND NOT|AND|NOT|IFAFTER|IFBEFORE) ", query, re.IGNORECASE)
         nb_if = 0
         for m in match_iter:
             start = m.start(0)
@@ -199,6 +199,16 @@ class SearchQuery(QueryAbstract):
             return IF(
                 self.parse_query(left_part),
                 ifquery.parse_query(right_part)
+            )
+        if operator == "ifafter":
+            return SearchOR(
+                self.parse_query(left_part),
+                self.parse_query(right_part)
+            )
+        if operator == "ifbefore":
+            return SearchOR(
+                self.parse_query(left_part),
+                self.parse_query(right_part)
             )
         else:
             raise ValueError("Query malformed, unsupported operator " +str(operator))

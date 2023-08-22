@@ -1,4 +1,4 @@
-
+import numpy as np
 
 class Binary:
     def __init__(self, left, right):
@@ -82,3 +82,43 @@ class IF:
 
     def __repr__(self):
         return f"({self.left}) IF ({self.right})"
+    
+
+class IFAFTER:
+    #Returns only search results that are placed after the IF
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+
+    def evaluate(self, doc):
+        rightres = self.right.evaluate(doc)
+        if rightres:
+            starts = [res[1][0] for res in rightres]
+            first_rigtres = np.argmin(starts)
+            leftres = self.left.evaluate(doc)
+            return [res for res in leftres if res[1][0] > first_rigtres[1][0]]
+        else:
+            return []
+
+    def __repr__(self):
+        return f"({self.left}) IFAFTER ({self.right})"
+    
+
+class IFBEFORE:
+    #Returns only search results that are placed after the IF
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+
+    def evaluate(self, doc):
+        rightres = self.right.evaluate(doc)
+        if rightres:
+            starts = [res[1][0] for res in rightres]
+            first_rigtres = np.argmin(starts)
+            leftres = self.left.evaluate(doc)
+            return [res for res in leftres if res[1][0] < first_rigtres[1][0]]
+        else:
+            return []
+
+    def __repr__(self):
+        return f"({self.left}) IFAFTER ({self.right})"

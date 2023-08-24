@@ -2,7 +2,7 @@ from unidecode import unidecode
 import re
 from .regex import WORD_REGEX
 from .entry import Entry, SearchEntry
-from .operators import AND, ANDNOT, OR, SearchOR, IF, NOT
+from .operators import AND, ANDNOT, OR, SearchOR, IF, NOT, IFBEFORE, IFAFTER
 import spacy
 
 
@@ -201,12 +201,12 @@ class SearchQuery(QueryAbstract):
                 ifquery.parse_query(right_part)
             )
         if operator == "ifafter":
-            return SearchOR(
+            return IFAFTER(
                 self.parse_query(left_part),
                 self.parse_query(right_part)
             )
         if operator == "ifbefore":
-            return SearchOR(
+            return IFBEFORE(
                 self.parse_query(left_part),
                 self.parse_query(right_part)
             )

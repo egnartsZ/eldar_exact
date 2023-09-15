@@ -5,6 +5,12 @@ Also allows to retrieve indexes of matching substring in the text
 
 ## Getting Started
 
+###
+
+Installation:
+
+```pip install eldar_extended```
+
 ### Basic usage
 
 ```python

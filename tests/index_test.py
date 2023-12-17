@@ -1,4 +1,4 @@
-from eldar_extended import Index
+from eldar_exact import Index
 
 documents = [
     "Gandalf is a fictional character in Tolkien's The Lord of the Rings",

@@ -1,4 +1,4 @@
-from eldar_extended import Query
+from eldar_exact import Query
 import pandas as pd
 
 

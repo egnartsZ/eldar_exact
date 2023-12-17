@@ -1,4 +1,4 @@
-from eldar_extended import Query, SearchQuery
+from eldar_exact import Query, SearchQuery
 
 
 # create list of documents to match:

@@ -111,7 +111,7 @@ class QueryAbstract:
             
             return self.operator_handling(operator, left_part, right_part)
         else:
-            query = self.preprocess(query)
+            query = self.preprocess_query(query)
             if isinstance(self, SearchQuery):
                 return SearchEntry(query)
             if isinstance(self, Query):
@@ -156,13 +156,22 @@ class Query(QueryAbstract):
                 )
             else: 
                 raise ValueError("Query malformed, unsupported operator for this type of queries " +str(operator))
-            
+
+    def preprocess_query(self, query):
+        if self.ignore_case:
+            query = query.lower()
+        if self.ignore_accent:
+            query = unidecode(query)
+
+        return query
 
     def preprocess(self, doc):
         if self.ignore_case:
             doc = doc.lower()
         if self.ignore_accent:
             doc = unidecode(doc)
+        if self.exact_match:
+            doc = set(re.findall(WORD_REGEX, doc, re.UNICODE))
         if self.stop_words:
             processed = self.nlp_model(doc)
             filtered = [token.text for token in processed if not token.text in self.stop_words_list]
@@ -212,12 +221,22 @@ class SearchQuery(QueryAbstract):
             )
         else:
             raise ValueError("Query malformed, unsupported operator " +str(operator))
-        
+
+    def preprocess_query(self, query):
+        if self.ignore_case:
+            query = query.lower()
+        if self.ignore_accent:
+            query = unidecode(query)
+
+        return query
+
     def preprocess(self, doc):
         if self.ignore_case:
             doc = doc.lower()
         if self.ignore_accent:
             doc = unidecode(doc)
+        if self.exact_match:
+            doc = set(re.findall(WORD_REGEX, doc, re.UNICODE))
         if self.stop_words and self.lemma_match:
             processed = self.nlp_model(doc)
             doc = [(token.lemma_, (token.idx, token.idx + len(token.text))) for token in processed if not token.text in self.stop_words_list]

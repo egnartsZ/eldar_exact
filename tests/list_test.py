@@ -1,4 +1,4 @@
-from eldar_extended import Query
+from eldar_exact import Query
 from pprint import pprint
 
 

@@ -9,12 +9,12 @@ Also allows to retrieve indexes of matching substring in the text
 
 Installation:
 
-```pip install eldar_extended```
+```pip install eldar_exact```
 
 ### Basic usage
 
 ```python
-from eldar_extended import Query, SearchQuery
+from eldar_exact import Query, SearchQuery
 
 # build list
 documents = [
@@ -39,7 +39,7 @@ print(eldar(documents[0]))
 print(eldar(documents[2]))
 # >>> True
 
-searchquery = SearchQuery('("gandalf is a" OR "frodo") OR ("gan*lf in")', ignore_case= True)
+searchquery = SearchQuery('("gandalf is a" OR "frodo") OR ("gan*lf in")', ignore_case=True)
 print(searchquery(documents[0]))
 # >>> [<eldar_extended.Match object; span=(0, 12), match = 'gandalf is a'>]
 print(searchquery(documents[1]))
@@ -50,10 +50,10 @@ print(searchquery(documents[4]))
 
 
 You can also use it to mask Pandas DataFrames:
-```python
-from eldar_extended import Query
-import pandas as pd
 
+```python
+from eldar_exact import Query
+import pandas as pd
 
 # build dataframe
 df = pd.DataFrame([
@@ -101,8 +101,7 @@ There are two types of queries:
 All queries also support `*` as wildcard character. Wildcard matches any number (including none) of alphanumeric characters.
 
 ```python
-from eldar_extended import Query
-
+from eldar_exact import Query
 
 # sample document and query with multiple wildcards:
 document = "Gandalf is a fictional character in Tolkien's The Lord of the Rings"

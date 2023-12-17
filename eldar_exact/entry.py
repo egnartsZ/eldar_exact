@@ -59,10 +59,15 @@ class Entry(EntryAbstract):
                     
 
         if self.rgx:
-            if self.rgx.search(doc):
-                res = True
-            else:
-                res = False
+            if isinstance(doc, str):
+                doc = [doc]
+
+            for item in doc:
+                if self.rgx.search(item):
+                    res = True
+                    break
+                else:
+                    res = False
         else:
             res = self.query in doc
         return res
